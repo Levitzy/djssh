@@ -6,12 +6,22 @@ const base64 = require('base-64');
 const app = express();
 app.use(bodyParser.json());
 
-const KEY = "X25ldHN5bmFfbmV0bW9kXw=="; // The same key used in the Python file
+// Ensure the key is 16 bytes (128 bits)
+let KEY = "X25ldHN5bmFfbmV0bW9kXw=="; // Original base64 encoded key
+
+// Decoding the base64 key and adjusting to 16 bytes if necessary
+let keyBytes = Buffer.from(base64.decode(KEY), 'utf-8');
+
+// Ensure key is exactly 16 bytes (if it's shorter, pad with zeros; if it's longer, truncate)
+if (keyBytes.length < 16) {
+    keyBytes = Buffer.concat([keyBytes, Buffer.alloc(16 - keyBytes.length)]);
+} else if (keyBytes.length > 16) {
+    keyBytes = keyBytes.slice(0, 16);
+}
 
 // Function to decrypt the data
 function decrypt(encryptedData) {
   try {
-    const keyBytes = Buffer.from(base64.decode(KEY), 'base64');
     const cipher = crypto.createDecipheriv('aes-128-ecb', keyBytes, null);
     let decrypted = cipher.update(Buffer.from(base64.decode(encryptedData), 'base64'), 'binary', 'utf8');
     decrypted += cipher.final('utf8');
