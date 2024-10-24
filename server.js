@@ -6,32 +6,40 @@ const base64 = require('base-64');
 const app = express();
 app.use(bodyParser.json());
 
-// Ensure the key is 16 bytes (128 bits)
-let KEY = "X25ldHN5bmFfbmV0bW9kXw=="; // Original base64 encoded key
+// Adjust the key to a proper length (16 bytes for AES-128)
+let KEY = "X25ldHN5bmFfbmV0bW9kXw=="; // Base64 encoded key
 
-// Decoding the base64 key and adjusting to 16 bytes if necessary
+// Decoding the base64 key
 let keyBytes = Buffer.from(base64.decode(KEY), 'utf-8');
 
-// Ensure key is exactly 16 bytes (if it's shorter, pad with zeros; if it's longer, truncate)
+// Ensure key is exactly 16 bytes for AES-128
 if (keyBytes.length < 16) {
     keyBytes = Buffer.concat([keyBytes, Buffer.alloc(16 - keyBytes.length)]);
 } else if (keyBytes.length > 16) {
     keyBytes = keyBytes.slice(0, 16);
 }
 
+// Function to apply PKCS#7 padding removal (if necessary)
+function removePadding(data) {
+    const padLength = data.charCodeAt(data.length - 1);
+    return data.slice(0, -padLength);
+}
+
 // Function to decrypt the data
 function decrypt(encryptedData) {
   try {
     const cipher = crypto.createDecipheriv('aes-128-ecb', keyBytes, null);
+    cipher.setAutoPadding(false);  // Disable auto padding
     let decrypted = cipher.update(Buffer.from(base64.decode(encryptedData), 'base64'), 'binary', 'utf8');
     decrypted += cipher.final('utf8');
+    decrypted = removePadding(decrypted);  // Remove padding manually
     return formatDecryptedData(decrypted.trim());
   } catch (err) {
     return `Error during decryption: ${err.message}`;
   }
 }
 
-// Function to format decrypted data
+// Function to format decrypted data (same as before)
 function formatDecryptedData(decryptedData) {
   let formattedData = [];
 
@@ -56,7 +64,7 @@ function formatDecryptedData(decryptedData) {
   return formattedData.join('\n\n');
 }
 
-// Function to find JSON objects within decrypted string
+// Function to find JSON objects within decrypted string (same as before)
 function findJsonObjects(text) {
   const jsonObjects = [];
   let braceCount = 0;
@@ -86,7 +94,7 @@ function findJsonObjects(text) {
   return jsonObjects;
 }
 
-// Function to format JSON data
+// Function to format JSON data (same as before)
 function formatJson(data) {
   const result = [];
   function recurse(obj, prefix = "") {
@@ -123,3 +131,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+        
