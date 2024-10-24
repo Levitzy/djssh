@@ -19,20 +19,15 @@ if (keyBytes.length < 16) {
     keyBytes = keyBytes.slice(0, 16);
 }
 
-// Function to apply PKCS#7 padding removal (if necessary)
-function removePadding(data) {
-    const padLength = data.charCodeAt(data.length - 1);
-    return data.slice(0, -padLength);
-}
-
 // Function to decrypt the data
 function decrypt(encryptedData) {
   try {
-    const cipher = crypto.createDecipheriv('aes-128-ecb', keyBytes, null);
-    cipher.setAutoPadding(false);  // Disable auto padding
-    let decrypted = cipher.update(Buffer.from(base64.decode(encryptedData), 'base64'), 'binary', 'utf8');
-    decrypted += cipher.final('utf8');
-    decrypted = removePadding(decrypted);  // Remove padding manually
+    const decipher = crypto.createDecipheriv('aes-128-ecb', keyBytes, null);
+    decipher.setAutoPadding(true); // Enable auto padding
+
+    let decrypted = decipher.update(Buffer.from(base64.decode(encryptedData), 'base64'), 'binary', 'utf8');
+    decrypted += decipher.final('utf8');
+
     return formatDecryptedData(decrypted.trim());
   } catch (err) {
     return `Error during decryption: ${err.message}`;
@@ -131,4 +126,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-        
